@@ -115,9 +115,8 @@ public class Particle {
         return color;
     }
 
-    public Paint setColor(Paint color) {
+    public void setColor(Paint color) {
         this.color = color;
-        return color;
     }
 
     /**
@@ -132,6 +131,16 @@ public class Particle {
 
         x += vx * dt;
         y += vy * dt;
+    }
+
+    /**
+     * Applies friction to the particle's velocity.
+     *
+     * @param friction The friction coefficient to apply.
+     */
+    public void applyFriction(double friction) {
+        this.vx *= (1 - friction);
+        this.vy *= (1 - friction);
     }
 
 }

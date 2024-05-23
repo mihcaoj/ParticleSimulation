@@ -22,6 +22,7 @@ public class Main extends Application {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 800;
     private static final int FPS = 60;
+    private static final double FRICTION = 0.0001;
 
     private List<Particle> particles;
 
@@ -66,14 +67,12 @@ public class Main extends Application {
         // Sort particles by their minimum x and y coordinates
         particles.sort(Comparator.comparing(Particle::getMinX).thenComparing(Particle::getMinY));
 
-        // Sweep and prune for x-axis and y-axis
         List<Particle> activeListX = new ArrayList<>();
         List<Particle> activeListY = new ArrayList<>();
 
         for (Particle particle : particles) {
             // Remove particles from the active list if they are no longer overlapping in the x-axis
             activeListX.removeIf(p -> p.getMaxX() < particle.getMinX());
-
 
             for (Particle other : activeListX) {
                 if (isColliding(particle, other)) {
@@ -285,6 +284,7 @@ public class Main extends Application {
      * @param gc The GraphicsContext of the canvas.
      */
     private void drawParticles(GraphicsContext gc) {
+
         for (Particle particle : particles) {
             gc.setFill(particle.getColor());
             gc.fillOval(particle.getX() - particle.getRadius(), particle.getY() - particle.getRadius(),
@@ -315,6 +315,8 @@ public class Main extends Application {
         double dt = 1.0 / FPS;
 
         for (Particle particle : particles) {
+            // Apply friction to the particle
+            particle.applyFriction(FRICTION);
             // Update particle position and velocity
             particle.move(dt);
 
