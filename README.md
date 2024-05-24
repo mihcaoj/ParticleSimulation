@@ -8,6 +8,7 @@ This Java application simulates the motion and collision of particles within a c
   
 - **Interactive Controls**:
   - **Toggle Gravity**: Press `G` to toggle gravity on and off.
+  - **Toggle Friction**: Press `F` to toggle friction on and off
   - **Add Particle**: Press `A` to add a new particle to the simulation.
   - **Reset Simulation**: Press `R` to reset the simulation.
   - **Quit Application**: Press `Q` to quit the application.
