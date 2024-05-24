@@ -5,9 +5,11 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
+import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.geometry.Pos;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -23,6 +25,7 @@ public class Main extends Application {
     private static final int HEIGHT = 800;
     private static final int FPS = 60;
     private static final double FRICTION = 0.0001;
+    private static final int BUTTON_BOX_HEIGHT = 28;
 
     private List<Particle> particles;
 
@@ -38,6 +41,15 @@ public class Main extends Application {
         particles.add(particle);
     }
 
+    public boolean isOverlapping(Particle newParticle) {
+        for (Particle particle : particles) {
+            if (isColliding(newParticle, particle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * This method generates a particle with random position, velocity, radius, mass, color, and elasticity.
      * The position is constrained within a boundary with a 20-pixel margin, the velocity ranges between -200 and 200
@@ -47,15 +59,23 @@ public class Main extends Application {
      * @return A randomly generated particle.
      */
     public Particle createRandomParticle() {
-        double x = Math.random() * (WIDTH - 40) + 20;
-        double y = Math.random() * (HEIGHT - 40) + 20;
-        int radius = (int) (Math.random() * 25 + 5);
-        double vx = Math.random() * 400 - 200;
-        double vy = Math.random() * 400 - 200;
-        double mass = Math.random() * 4.5 + 0.5;
-        Color color = createRandomColor();
-        double elasticity = Math.random() * 0.15 + 0.8;
-        return new Particle(x, y, vx, vy, mass, elasticity, radius, color);
+        Particle newParticle;
+        do {
+            double x = Math.random() * (WIDTH - 40) + 20;
+            double y = Math.random() * (HEIGHT - 40) + 20;
+            int radius = (int) (Math.random() * 25 + 5);
+            double vx = Math.random() * 400 - 200;
+            double vy = Math.random() * 400 - 200;
+            double mass = Math.random() * 4.5 + 0.5;
+            Color color = createRandomColor();
+            double elasticity = Math.random() * 0.15 + 0.8;
+            newParticle = new Particle(x, y, vx, vy, mass, elasticity, radius, color);
+        } while (isOverlapping(newParticle));
+        return newParticle;
+    }
+
+    public void removeParticle(Particle particle) {
+        particles.remove(particle);
     }
 
     /**
@@ -105,9 +125,7 @@ public class Main extends Application {
     public boolean isColliding(Particle p1, Particle p2) {
         double dx = p2.getX() - p1.getX();
         double dy = p2.getY() - p1.getY();
-        double dxSquared = Math.pow(dx, 2);
-        double dySquared = Math.pow(dy, 2);
-        double distance = Math.sqrt(dxSquared + dySquared);
+        double distance = Math.sqrt(dx * dx + dy * dy);
         return distance < (p1.getRadius() + p2.getRadius());
     }
 
@@ -117,6 +135,8 @@ public class Main extends Application {
      * @param particle The particle to check for wall collisions.
      */
     public void checkCollisionWithWalls(Particle particle) {
+        int screenHeight = Main.getHeight() - BUTTON_BOX_HEIGHT;
+
         if (particle.getX() - particle.getRadius() < 0) {
             particle.setVx(-particle.getVx());
             particle.setX(particle.getRadius());
@@ -128,9 +148,9 @@ public class Main extends Application {
         if (particle.getY() - particle.getRadius() < 0) {
             particle.setVy(-particle.getVy());
             particle.setY(particle.getRadius());
-        } else if (particle.getY() + particle.getRadius() > Main.getHeight()) {
+        } else if (particle.getY() + particle.getRadius() > screenHeight) {
             particle.setVy(-particle.getVy());
-            particle.setY(getHeight() - particle.getRadius());
+            particle.setY(screenHeight - particle.getRadius());
         }
     }
 
@@ -144,9 +164,7 @@ public class Main extends Application {
     public void resolveCollision(Particle p1, Particle p2) {
         double dx = p2.getX() - p1.getX();
         double dy = p2.getY() - p1.getY();
-        double dxSquared = Math.pow(dx, 2);
-        double dySquared = Math.pow(dy, 2);
-        double distance = Math.sqrt(dxSquared + dySquared);
+        double distance = Math.sqrt(dx * dx + dy * dy);
 
         // Check for zero distance to avoid division by zero
         if (distance == 0) {
@@ -192,7 +210,7 @@ public class Main extends Application {
         p2.setVy(p2.getVy() + impulseY / p2.getMass());
 
         // Positional correction to avoid particles sticking
-        double percent = 0.2;
+        double percent = 0.75;
         double slop = 0.01;
         double overlap = Math.max(distance - (p1.getRadius() + p2.getRadius()), 0);
         double correction = (overlap - slop) / (1 / p1.getMass() + 1 / p2.getMass()) * percent;
@@ -237,15 +255,63 @@ public class Main extends Application {
         Canvas canvas = new Canvas(WIDTH, HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
+        // Create buttons
+        Button toggleGravityButton = new Button("Toggle Gravity");
+        Button resetButton = new Button("Reset Simulation");
+        Button addParticleButton = new Button("Add Particle");
+        Button removeParticleButton = new Button("Remove Particle");
+        Button quitButton = new Button("Quit Simulation");
+
+        // Set button actions
+        toggleGravityButton.setOnAction(e -> {
+            Particle.isGravityEnabled = !Particle.isGravityEnabled;
+            System.out.println(Particle.isGravityEnabled ? "[+][+][+] Gravity ON [+][+][+]" : "[-][-][-] Gravity OFF [-][-][-]");
+        });
+
+        addParticleButton.setOnAction(e -> {
+            Particle newParticle = createRandomParticle();
+            addParticle(newParticle);
+            System.out.println("[+][+][+] Particle added: " + newParticle + " [+][+][+]");
+        });
+
+        removeParticleButton.setOnAction(e -> {
+            if (!particles.isEmpty()) {
+                Particle removedParticle = particles.get(particles.size() - 1);
+                removeParticle(removedParticle);
+                System.out.println("[-][-][-] Particle removed: " + removedParticle + " [-][-][-]");
+            } else {
+                System.out.println("[!][!][!] No particles left to remove [!][!][!]");
+            }
+        });
+
+        resetButton.setOnAction(e -> {
+            resetSimulation(gc);
+            System.out.println("[*][*][*] Simulation was reset [*][*][*]");
+        });
+
+        quitButton.setOnAction(e -> {
+            System.out.println("[!][!][!] Quitting the application [!][!][!]");
+            Platform.exit();
+        });
+
+        // Create HBox to hold the buttons
+        HBox buttonBox = new HBox(10, toggleGravityButton, addParticleButton, removeParticleButton, resetButton, quitButton);
+        buttonBox.setStyle("-fx-padding: 0; -fx-alignment: center;");
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.setBackground(Background.fill(Color.BLACK));
+
+        // Create the main layout and add the canvas and buttonBox
+        BorderPane root = new BorderPane();
+        root.setCenter(canvas);
+        root.setTop(buttonBox);
+
         // Create scene
-        StackPane root = new StackPane();
-        root.getChildren().add(canvas);
         Scene scene = new Scene(root, WIDTH, HEIGHT);
 
         // Initialize particles
         initializeParticles();
 
-        // Set up key event handlers for toggling gravity and resetting the simulation
+        // Set up key event handlers
         scene.setOnKeyReleased(event -> {
             if (event.getCode() == KeyCode.G) {
                 Particle.isGravityEnabled = !Particle.isGravityEnabled;
@@ -254,8 +320,17 @@ public class Main extends Application {
                 resetSimulation(gc);
                 System.out.println("[*][*][*] Simulation was reset [*][*][*]");
             } else if (event.getCode() == KeyCode.A) {
-                addParticle(createRandomParticle());
-                System.out.println("[+][+][+] Particle added [+][+][+]");
+                Particle newParticle = createRandomParticle();
+                addParticle(newParticle);
+                System.out.println("[+][+][+] " + newParticle + " was added [+][+][+]");
+            } else if (event.getCode() == KeyCode.K) {
+                if (!particles.isEmpty()) {
+                    Particle removedParticle = particles.getLast();
+                    removeParticle(removedParticle);
+                    System.out.println("[-][-][-] " + removedParticle + " was removed [-][-][-]");
+                } else {
+                    System.out.println("[!][!][!] No particles left to remove [!][!][!]");
+                }
             } else if (event.getCode() == KeyCode.Q) {
                 System.out.println("[!][!][!] Quitting the application [!][!][!]");
                 Platform.exit();
@@ -287,7 +362,6 @@ public class Main extends Application {
      * @param gc The GraphicsContext of the canvas.
      */
     private void drawParticles(GraphicsContext gc) {
-
         for (Particle particle : particles) {
             gc.setFill(particle.getColor());
             gc.fillOval(particle.getX() - particle.getRadius(), particle.getY() - particle.getRadius(),
@@ -303,7 +377,7 @@ public class Main extends Application {
      */
     private void initializeParticles() {
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 75; i++) {
             addParticle(createRandomParticle());
         }
     }
@@ -325,7 +399,6 @@ public class Main extends Application {
 
             checkCollisionWithWalls(particle);
         }
-
         checkParticleCollisions();
     }
 
