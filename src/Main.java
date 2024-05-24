@@ -259,6 +259,9 @@ public class Main extends Application {
             } else if (event.getCode() == KeyCode.Q) {
                 System.out.println("[!][!][!] Quitting the application [!][!][!]");
                 Platform.exit();
+            } else if (event.getCode() == KeyCode.F) {
+                Particle.isFrictionEnabled = !Particle.isFrictionEnabled;
+                System.out.println(Particle.isFrictionEnabled ? "[+][+][+] Friction ON [+][+][+]" : "[-][-][-] Friction OFF [-][-][-]");
             }
         });
 

@@ -10,6 +10,7 @@ public class Particle {
 
     public static double GRAVITY = 9.81;
     public static boolean isGravityEnabled;
+    public static boolean isFrictionEnabled;
 
     private double x;
     private double y;
